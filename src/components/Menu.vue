@@ -1,0 +1,160 @@
+<template>
+  <div class="menu_wrapper">
+    <div class="menu">
+      <h3>~Authentic handmade pizza~</h3>
+      <table style>
+        <tbody v-for="item in getMenuItems" :key="item.name">
+          <tr>
+            <td>
+              <strong>~{{item.name}}~</strong>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <small>{{item.description}}</small>
+            </td>
+          </tr>
+          <tr v-for="(option, index) in item.options" :key="index">
+            <td>{{option.size}}</td>
+            <td>{{option.price | currency}}</td>
+            <td>
+              <button type="button" class="btn_green" @click="addToBasket(item, option)">+</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="basket">
+      <h3>~Basket~</h3>
+      <div v-if="basket.length>0">
+        <table style>
+          <thead>
+            <th>Quantity</th>
+            <th>Item</th>
+            <th>Price</th>
+          </thead>
+          <tbody v-for="(item, index) in basket" :key="index">
+            <tr>
+              <td>
+                <button class="btn_green" @click="decreaseQuantity(item)">&#8722;</button>
+                <span>{{item.quantity}}</span>
+                <button class="btn_green" @click="increaseQuantity(item)">&#43;</button>
+              </td>
+              <td>{{item.name}} {{item.size}}"</td>
+              <td>{{(item.price * item.quantity) | currency}}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p align="center">Order Total: {{total | currency}}</p>
+        <div class="btn_wrapper">
+          <button class="btn_green" @click="addNewOrder">Place Order</button>
+        </div>
+      </div>
+      <div v-else>{{basketText}}</div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+h3 {
+  text-align: center;
+}
+
+.menu_wrapper {
+  display: flex;
+  flex-direction: row;
+}
+
+.menu,
+.basket {
+  background: #f1e6da;
+  border-radius: 10px;
+  border: 2px solid black;
+  margin: 10px;
+  padding: 10px;
+}
+
+.menu {
+  width: 60vw;
+}
+
+.basket {
+  width: 40vw;
+}
+
+table {
+  text-align: left;
+  width: 80%;
+}
+
+th,
+td {
+  padding: 10px;
+}
+
+.btn_wrapper {
+  text-align: center;
+}
+</style>
+
+<script>
+import {mapGetters} from 'vuex'
+export default {
+  data() {
+    return {
+      basketText: "Your Basket is empty !",
+      basket: [],
+      
+    };
+  },
+  computed:{
+    ...mapGetters(['getMenuItems']),
+    total(){
+      let totalCost=0
+      this.basket.map(item=>{
+        totalCost+=(item.quantity*item.price)
+      })
+      return totalCost
+    }
+  },
+  methods: {
+    async addToBasket(item, option) {
+      const pizzaExists = this.basket.find(
+        pizza => pizza.name === item.name && pizza.size === option.size
+      );
+      if (pizzaExists) {
+        pizzaExists.quantity++;
+        return;
+      }
+      this.basket.push({
+        name: item.name,
+        price: option.price,
+        size: option.size,
+        quantity: 1
+      });
+    },
+    removeFromBasket(item) {
+      this.basket.splice(this.basket.indexOf(item), 1);
+    },
+    increaseQuantity(item) {
+      item.quantity++;
+    },
+    decreaseQuantity(item) {
+      item.quantity--;
+      if (item.quantity === 0) {
+        this.removeFromBasket(item);
+      }
+    },
+    addNewOrder(){
+      const order={
+        pizzas: {...this.basket},
+        createdAt: new Date()
+      }
+      //this.$store.commit('addOrder', this.basket)
+      this.$store.dispatch('addNewOrder', order)
+      this.basket=[]
+      this.basketText="Order Placed!"
+    }
+  }
+};
+</script>
